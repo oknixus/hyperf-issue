@@ -1,0 +1,60 @@
+services:
+  mysql:
+    image: mysql:latest
+    container_name: mysql
+    volumes:
+      - ./database:/var/lib/mysql:delegated
+      - ./conf/mysql/my.cnf:/etc/mysql/conf.d/my.cnf:delegated
+    expose:
+      - 3306
+    ports:
+      - 3306:3306
+    environment:
+      - TZ=Asia/Shanghai
+      - MYSQL_ROOT_PASSWORD=root123
+    restart: "no"
+
+  redis:
+    image: redis:alpine3.17
+    container_name: redis
+    volumes:
+      - ./redis:/data:delegated
+      - ./conf/redis/redis.conf:/home/redis/redis.conf
+    expose:
+      - 6379
+    ports:
+      - 6379:6379
+    environment:
+      - TZ=Asia/Shanghai
+    command: [ "redis-server", "/home/redis/redis.conf" ]
+    restart: on-failure
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    volumes:
+      - ./conf/nginx/:/etc/nginx/conf.d:delegated
+      - ./html:/var/www/html:delegated
+    ports:
+      - 8003:8003
+    environment:
+      - TZ=Asia/Shanghai
+    restart: "no"
+
+  hyperf:
+    image: registry.cn-guangzhou.aliyuncs.com/nixus/swoole:8.2-alpine3.17
+    container_name: hyperf
+    volumes:
+      - ./html:/var/www/html:delegated
+      - ./conf/php/docker-php-ext-swoole.ini:/usr/local/etc/php/conf.d/docker-php-ext-swoole.ini
+    expose:
+      - 9501
+    environment:
+      - TZ=Asia/Shanghai
+    working_dir: /var/www/html/hyperf
+    depends_on:
+      - mysql
+      - redis
+      #command: php bin/hyperf.php start
+    command: tail -f /dev/null
+    restart: on-failure
